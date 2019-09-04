@@ -1,66 +1,61 @@
-def predict(
-	inputs:list,
-	weights:list
-)->float: # pred
-	"""
-		Make a prediction
-	"""
-	assert type(inputs) == list
-	assert type(weights) == list
-	assert len(inputs) == len(weights)
-	return sum([inputs[k]*weights[k] for k in range(len(inputs))])
+from base import train, predict
+from node import Node
+from functions import sigmoid
 
-
-def train(
-	inputs:list,
-	weights:list,
-	goal_pred:float,
-	times:int=20,
-	alpha:float=1.0
-)->list: # updated weights
-	""" Transform weights to reach the goal prediction """
-	assert type(inputs) == list
-	assert type(weights) == list
-	assert len(inputs) == len(weights)
-	assert type(goal_pred) == float
-	assert type(times) == int
-	assert type(alpha) == float
-	assert alpha != 0
-	for _ in range(times):
-		pred = predict(inputs, weights)
-		delta = pred-goal_pred
-		weight_deltas = [inputs[k]*delta for k in range(len(inputs))]
-		weights = [weights[k]-(weight_deltas[k]*alpha) for k in range(len(inputs))]
-	return weights
-
-def main():
-	inputs = [1.0, 3.0, 2.0]
-	weights = [0.5, 2.0, 0.1]
+def simple_case():
+	features = [1.0, 3.0, 2.0]
+	weights = [0, 0, 0]
 	goal_pred = 10.0
 	alpha = 1e-2
-	times = 10
+	times = 100
 	print(f"goal_prediction={goal_pred}")
-	pred = predict(
-		inputs,
-		weights
-	)
+	label = predict(features, weights)
 	print(f"*Before training*")
-	print(f"prediction={pred}")
+	print(f"prediction={label}")
 	print(f"*After training*")
-	weights = train(
-		inputs,
-		weights,
-		goal_pred,
-		times,
-		alpha
-	)
-	pred = predict(
-		inputs,
-		weights
-	)
-	print(f"prediction={pred}")
-	print(f"confidence={round(100-(abs(pred-goal_pred))*100/(pred+goal_pred), 2)}%")
+	weights = train(features, weights, goal_pred, times, alpha)
+	label = predict(features, weights)
+	print(f"prediction={label}")
+	print(f"confidence={round(100-(abs(label-goal_pred))*100/(label+goal_pred), 2)}%")
 	print(f"weights={weights}")
+
+
+def neuron():
+	goal_pred = 10.0
+	features = [1.0, 3.0, 2.0]
+	print(f"goal_prediction={goal_pred}")
+	n = Node(3)
+	n.connect(lambda p: print(f"label: {p}"))
+	print(f"*Before training*")
+	n.transmit_all(features)
+	n.train(goal_pred, features)
+	print(f"*After training*")
+	n.transmit_all(features)
+
+def triple_neuron():
+	goal_pred = 10.0
+	features = [1.0, 3.0, 2.0]
+	def done(p):
+		print(f'pred: {p}\ndelta: error: {p-goal_pred}\n{(p-goal_pred)**2}')
+	print(f"goal: {goal_pred}")
+	n1 = Node(3, sigmoid)
+	n2 = Node(1, sigmoid)
+	n3 = Node(1, sigmoid)
+	n1.connect(lambda p: n2.transmit(0, p))
+	n2.connect(lambda p: n3.transmit(0, p))
+	n3.connect(done)
+	print(f"*Before training*")
+	n1.transmit_all(features)
+
+	#n1.train(goal_pred, features)
+	#print(f"*After training*")
+	#n1.transmit_all(features)
+
+
+def main():
+	#simple_case()
+	#neuron()
+	triple_neuron()
 
 
 if __name__ == '__main__':
